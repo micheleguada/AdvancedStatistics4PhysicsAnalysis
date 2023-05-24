@@ -1,0 +1,277 @@
+---
+title: "R Lab. - Exercise 1"
+author: "Michele Guadagnini - Mt. 1230663"
+date: "April 15, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 1 - Vectors and dataframes
+
+Importing scottish lakes data:
+
+```{r scottish lakes data, results='asis'}
+Names <- c("Ness", "Lomond", "Morar", "Tay", "Awe", "Maree", "Ericht", "Lochy", "Rannoch", 
+           "Shiel", "Katrine", "Arkaig", "Shin")
+Vols  <- c(7.45, 2.6, 2.3,  1.6,  1.2, 1.09, 1.08, 1.07, 0.97, 0.79, 0.77, 0.75, 0.35)#km3
+Area  <- c(56,   71,  27,   26.4, 39,  28.6, 18.6, 16,   19,   19.5, 12.4, 16,   22.5)#km2
+Lengs <- c(39,   36,  18.8, 23,   41,  20,   23,   16,   15.7, 28,   12.9, 19.3, 27.8)#km
+Maxdp <- c(230,  190, 310,  150,  94,  114,  156,  162,  134,  128,  151,  109,  49  )#m
+Meandp<- c(132,  37,  87,   60.6, 32,  38,   57.6, 70,   51,   40,   43.4, 46.5, 15.5)#m
+
+scottish.lakes <- data.frame(Names, Vols, Area, Lengs, Maxdp, Meandp)
+colnames(scottish.lakes) <- c("Name","Volume [km³]","Area [km²]","Length [km]",
+                              "Max dp [m]","Mean dp [m]")
+knitr::kable(scottish.lakes, caption="Scottish Lakes data frame")
+```
+
+### 1) Evaluate the highest and lowest volume and area lake
+
+```{r volume and area extremes}
+maxvol <- max(scottish.lakes$Volume, na.rm=TRUE)
+minvol <- min(scottish.lakes$Volume, na.rm=TRUE)
+maxn <- scottish.lakes$Name[which.max(scottish.lakes$Volume)]
+minn <- scottish.lakes$Name[which.min(scottish.lakes$Volume)]
+
+message(paste("Maximum volume is", maxvol, "km³ of Loch", maxn, 
+              "\nMinimum volume is", minvol, "km³ of Loch", minn))
+
+maxarea <- max(scottish.lakes$Area, na.rm=TRUE)
+minarea <- min(scottish.lakes$Area, na.rm=TRUE)
+maxn <- scottish.lakes$Name[which.max(scottish.lakes$Area)]
+minn <- scottish.lakes$Name[which.min(scottish.lakes$Area)]
+
+message(paste("Maximum area is", maxarea, "km² of Loch", maxn,
+              "\nMinimum area is", minarea, "km² of Loch", minn))
+```
+
+### 2) Order the frame with respect to the area and determine the two largest area lakes
+
+```{r largest area lakes}
+scottish.lakes <- scottish.lakes[order(-scottish.lakes$Area),]
+lan <- scottish.lakes$Name[1:2]
+la  <- c(scottish.lakes$Area[1:2])
+
+message(paste("The lake with largest area is Loch", lan[1], "with", la[1], "km²" , 
+              "\nThe lake with second largest area is Loch", lan[2], "with", la[2], "km²"))
+```
+
+### 3) By summing up the areas occupied by the lakes, determine the area of Scotland covered by water
+
+```{r total area}
+WaterArea <- sum(scottish.lakes$Area)
+message(paste("Total surface covered by water is", WaterArea, "km²"))
+```
+
+\newpage
+## Exercise 2 - DAAG and Tibble
+
+Importing needed packages:
+```{r packages, message=FALSE, warning=FALSE}
+#install.packages(c('DAAG','tibble'), type='source')
+library(DAAG, tibble)
+#library(help=DAAG)
+library(tidyverse)
+```
+
+Loading the Australian athletes data frame:
+```{r ais, results='asis'}
+data(ais)
+#?ais
+tbais <- tibble(ais)
+knitr::kable(tbais[1:5,], caption="Australian athletes data frame")
+```
+
+### 1) Create a table grouping the data by gender and by sport; produce a barplot with the table adding a legend
+
+```{r table}
+tbl <- table(tbais$sex, tbais$sport)
+tbl
+```
+
+```{r barplot, echo=TRUE}
+maxY <- max(tbl)
+barplot(tbl, beside=TRUE, col=c("mistyrose", "lightblue"), 
+        legend=rownames(tbl), las=2, ylim=c(0,maxY+5))
+title( main="Australian athletes" )
+```
+
+### 2) Determine if any of the columns holds missing values
+
+```{r nacheck}
+any(is.na(tbais))
+```
+
+### 3) Produce boxplots of the main blood variables (’red blood cell counts’, ’white blood cell counts’, ’hematocrit’ and ’hemaglobin concentration’), for different kind of sports
+
+```{r boxplots, fig.height=6}
+# custom colors list
+cols <- c("red","orchid1","purple","blue","cyan","green","gold1",
+          "darkorange1","sienna","forestgreen")
+
+par(mfrow=c(2,2))
+boxplot(rcc~sport, data=tbais, main='Red Cell Counts (RCC) by sport', xlab='Sport',
+        ylab='RCC', col=cols, medcol='white', las=2)
+boxplot(wcc~sport, data=tbais, main='White Cell Counts (WCC) by sport', xlab='Sport',
+        ylab='WCC', col=cols, medcol='white', las=2)
+boxplot(hc~sport, data=tbais, main='Hematocrit by sport', xlab='Sport', 
+        ylab='Hematocrit', col=cols, medcol='white', las=2)
+boxplot(hg~sport, data=tbais, main='Hemaglobin concentration by sport', xlab='Sport',
+        ylab='Hemaglobin', col=cols, medcol='white', las=2)
+```
+
+### 4) Make some scatter plot correlations of the same blood variables using different colors and symbols for the two genders in the sample
+
+```{r scatterplots, fig.height=6}
+vars <- list(tbais$rcc, tbais$wcc, tbais$hc, tbais$hg)
+keys <- list("RCC", "WCC", "Hematocrit", "Hemaglobin")
+
+pairs(vars, keys, main="Correlations scatter plots matrix", 
+      col=ifelse(tbais$sex=='f', "coral2", "blue"), 
+      pch=ifelse(tbais$sex=='f', 24, 25),
+      bg =ifelse(tbais$sex=='f', "mistyrose", "lightblue"),
+      lower.panel=NULL,
+     )
+par(xpd=TRUE)
+legend(0.1,0.3, legend=unique(tbais$sex), 
+       col = c("coral2", "blue"),
+       pt.bg = c("mistyrose", "lightblue"),
+       pch = c(24, 25),
+       title="Legend:"
+      )
+```
+
+\newpage
+## Exercise 3 - COVID-19
+
+```{r packages-data, warning=F, message=F}
+needed_packages <- c('lubridate', 'readxl', 'curl')
+already_installed <- needed_packages %in% installed.packages()
+for (pack in needed_packages [!already_installed]) {
+    message(paste("To be installed : ", pack, sep = " "))
+    install.packages(pack)
+}
+library(lubridate)
+library(readxl)
+library(curl)
+url <- "https://www.ecdc.europa.eu/sites/default/files/documents/"
+fname <- "COVID-19-geographic-disbtribution-worldwide-"
+date <- lubridate::today() - 1
+ext = ".xlsx"
+target <- paste(url, fname, date, ext, sep = "")
+message("target :", target)
+tmp_file <- tempfile("data", "/tmp", fileext = ext)
+tmp <- curl::curl_download(target, destfile = tmp_file)
+covid <- readxl::read_xlsx(tmp_file)
+```
+
+### 1) Exploring the structure of the loaded data frame:
+```{r covidtibble}
+summary(covid)
+#excluding last column (popData2018) due to page size limit
+knitr::kable(covid[order(-covid$year, -covid$month, -covid$day),][1:10,1:9],
+             caption="Head of covid data frame")
+```
+
+### 2) Selecting yesterday data with more cases or more deaths
+
+```{r yest}
+yest <- Sys.Date()-1
+covidYest <- covid[covid$dateRep==yest,]
+
+covidYestNewCases <- covidYest[covidYest$cases > 200,]
+x <- matrix( c(covidYestNewCases$cases, covidYestNewCases$deaths), ncol=2)
+colnames(x) <- c("cases", "deaths")
+rownames(x) <- covidYestNewCases$countriesAndTerritories
+tblCases <- as.table(x)
+tblCases
+
+covidYestNewDeaths <- covidYest[covidYest$deaths > 200,]
+y <- matrix( c(covidYestNewDeaths$deaths, covidYestNewDeaths$cases), ncol=2)
+colnames(y) <- c("deaths", "cases")
+rownames(y) <- covidYestNewDeaths$countriesAndTerritories
+tblDeaths <- as.table(y)
+tblDeaths
+```
+
+### 3) Selecting top ten countries in term of cases
+
+```{r topten}
+totCases  <- aggregate(covid$cases, by=list(covid$geoId), FUN=sum)
+totCases  <- totCases[order(-totCases$x),][1:10,]
+TopgeoIds <- list(totCases[[1]])
+
+covidTop10 <- covid[covid$geoId %in% TopgeoIds[[1]],]
+Toplist    <- group_split(covidTop10 %>% group_by(geoId))
+
+for (i in c(1:10)) {    
+    Toplist[[i]] <- Toplist[[i]][order(Toplist[[i]]$year, Toplist[[i]]$month,
+                                       Toplist[[i]]$day),]
+    Toplist[[i]][, "cumcases"]  <- cumsum(Toplist[[i]]$cases)
+    Toplist[[i]][, "cumdeaths"] <- cumsum(Toplist[[i]]$deaths)
+    Toplist[[i]] <- Toplist[[i]][Toplist[[i]]$cumcases>0,]
+    Toplist[[i]][, "datenorm"]  <- as.numeric(difftime(Toplist[[i]]$dateRep,
+                                                       first(Toplist[[i]]$dateRep),
+                                                       units="days"))    
+}
+```
+
+\newpage
+Plotting total number of cases vs time:
+```{r cases-time, fig.height=5}
+pchs <- rep(c(21,22,23,24,25), times=2)
+maxcases <- max(totCases$x)
+maxdays  <- as.numeric(difftime(yest, min(covid$dateRep)), units="days")
+
+plot(Toplist[[1]]$datenorm, Toplist[[1]]$cumcases,
+     main="Cumulative cases vs Time", xlab="Days from first case", ylab="Total cases", 
+     col=cols[1], pch=pchs[1], cex=0.5,
+     ylim=c(0,maxcases), xlim=c(0,maxdays),
+     panel.first=grid(),
+    )
+for (i in c(2:10)) {
+    points(Toplist[[i]]$datenorm, Toplist[[i]]$cumcases, 
+           col=cols[i], cex=0.5, pch=pchs[i],
+          )
+}
+par(xpd=TRUE)
+legend("topleft", sort(TopgeoIds[[1]]), 
+       col = cols,
+       pch = pchs,
+      )
+```
+
+\newpage
+Plotting total number of deaths vs time:
+```{r deaths-time, fig.height=5}
+totDeaths <- aggregate(covid$deaths, by=list(covid$geoId), FUN=sum)
+maxdeaths <- max(totDeaths$x)
+
+plot(Toplist[[1]]$datenorm, Toplist[[1]]$cumdeaths, 
+     main="Cumulative deaths vs Time", xlab="Days from first case", ylab="Total deaths", 
+     col=cols[1], pch=pchs[1], cex=0.5, 
+     ylim=c(0,maxdeaths), xlim=c(0,maxdays),
+     panel.first=grid(),
+    )
+for (i in c(2:10)) {
+    points(Toplist[[i]]$datenorm, Toplist[[i]]$cumdeaths, 
+           col=cols[i], pch=pchs[i], cex=0.5,
+          )
+}
+par(xpd=TRUE)
+legend("topleft", sort(TopgeoIds[[1]]), 
+       col = cols,
+       pch = pchs,
+      )
+```
+
+\newpage
+Date of first recorded case in the top-ten countries:
+```{r firstcase}
+for (j in c(1:10)) {
+    message(paste0(Toplist[[j]]$countryterritoryCode[1],": ",Toplist[[j]]$dateRep[1]))
+} 
+```

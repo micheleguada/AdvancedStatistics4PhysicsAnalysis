@@ -1,0 +1,11 @@
+model {
+      for (t in 1:N) { 
+         mu[t] <- exp(b0 + b1*step(t-tau))
+         D[t] ~ dpois(mu[t])
+      }
+
+      # Prior
+      b0  ~ dunif(0, 4)
+      b1  ~ dunif(-4, 0)
+      tau ~ dunif(1, N) 
+    }

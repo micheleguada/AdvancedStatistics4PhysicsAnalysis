@@ -1,0 +1,202 @@
+---
+title: "R Lab. - Exercise 2"
+author: "Michele Guadagnini - Mt. 1230663"
+date: "April 22, 2020"
+header-includes:
+   - \usepackage{multicol}
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tibble)
+library(dplyr)
+```
+
+## Exercise 0 - Practice with the discrete probability distributions in R
+
+Practice with the discrete probability distributions in R
+```{r practice, fig.height=6, fig.width=10, out.width='95%', fig.align='center'}
+x <- 1:30
+poisx <- dpois(x, 2)
+binx  <- dbinom(x, 50, 0.2)
+geomx <- dgeom(x, 0.2)
+ppoisx <- ppois(x, 2)
+pbinx  <- pbinom(x, 50, 0.2)
+pgeomx <- pgeom(x, 0.2)
+colors <- c("red", "blue", "darkgreen")
+labels <- c("pois", "bin", "geom")
+
+par(mfrow=c(1,2), oma=c(0,0,1,0))
+plot(x, poisx, type="s", xlab="x value", ylab="Density", ylim=c(0,0.3),
+     col=colors[1])
+lines(x, binx, type="s", col=colors[2])
+lines(x, geomx, type="s", col=colors[3])
+legend("topright", inset=.05, labels, lwd=2, lty=c(1, 1, 1), col=colors)
+plot(x, ppoisx, type="s", xlab="x value", ylab="Cumulative Density", ylim=c(0,1),
+     col=colors[1])
+lines(x, pbinx, type="s", col=colors[2])
+lines(x, pgeomx, type="s", col=colors[3])
+legend("bottomright", inset=.05, labels, lwd=2, lty=c(1, 1, 1), col=colors)
+mtext("Comparison of Distributions", outer=TRUE, cex=1.5, line=-2)
+```
+\newpage
+
+## Exercise 1 - Concentration of a contaminant in tap water
+A set of measurements have been performed on the concentration of a contaminant in tap water with two methods. Evaluate the expected values, E[X], and the variance, Var(X), for both methods.
+```{r ex1}
+x  <- c(15.58, 15.9, 16 , 16.1, 16.2)
+p1 <- c(0.15, 0.21, 0.35, 0.15, 0.14)
+p2 <- c(0.14, 0.05, 0.64, 0.08, 0.09)
+
+Expectation1 <- sum(x*p1)
+Var1 <- sum(x*x*p1) - sum(x*p1)**2
+Expectation2 <- sum(x*p2)
+Var2 <- sum(x*x*p2) - sum(x*p2)**2
+```
+\begin{multicols}{2}
+For method 1:\newline
+the expected value is: `r Expectation1`\newline
+the variance is: `r Var1`\newline
+For method 2:\newline
+the expected value is: `r Expectation2`\newline
+the variance is: `r Var2`
+\end{multicols}
+
+## Exercise 2 - Waiting time at the doctor’s
+The waiting time, in minutes, at the doctor’s is about 30 minutes, and the distribution follows an exponential pdf with rate 1/30
+
+### A) simulate the waiting time for 50 people at the doctor’s office and plot the relative histogram
+```{r doctor, fig.height=5, fig.width=9, out.width='95%'}
+Npp <- 50
+lambda <- 1/30
+x <- 1:Npp
+wt <- rexp(x, lambda)
+
+hist(wt, col="red", density=40, xlim=c(0,max(wt)+30), ylim=c(0,35),
+     ylab="Persons", xlab="Waiting time [min]", main="Simulated waiting times")
+```
+
+### B) what is the probability that a person will wait for less than 10 minutes?
+```{r 10min}
+theoProb10min <- pexp(10,lambda)
+empProb10min  <- length(wt[wt<10])/length(wt)
+```
+Estimation from theoretical distribution: `r theoProb10min`\newline
+Estimation from simulated data: `r empProb10min`
+
+### C) evaluate the average waiting time from the simulated data and compare it with the expected value
+```{r avgwt}
+integrand <- function(z){z*dexp(z, lambda)}
+integralWtavg <- integrate(integrand, 0, Inf)
+theoricWtavg <- 1/lambda
+empiricalWtavg <- mean(wt)
+```
+The estimation by integrating the distribution is: `r integralWtavg$value` min.\newline
+The theoretical expected waiting time is: `r theoricWtavg` min.\newline
+The waiting time estimated from simulation is: `r empiricalWtavg` min.
+
+### D) what is the probability for waiting more than one hour before being received?
+```{r 60min}
+theoProb60min <- 1-pexp(60,lambda)
+empProb60min  <- length(wt[wt>60])/length(wt)
+```
+The theoretical probability of waiting more then 60 minutes is: `r theoProb60min`\newline
+The one estimated from simulation is: `r empProb60min`
+
+\newpage
+## Exercise 3 - Typos in a book
+Suppose that on a book, on average, there is one typo error every three pages. If the number of errors follows a Poisson distribution, plot the pdf and cdf. 
+```{r typos1, fig.height=5, fig.width=9, out.width='95%'}
+Nmax <- 10
+rate <- 1/3
+x <- seq(0, Nmax, length=Nmax+1)
+poispdf <- dpois(x, rate)
+poiscdf <- ppois(x, rate)
+
+par(mfrow=c(1,2))
+plot(x, poispdf, type="b", xlab="# errors in a page", ylab="Probability",
+     main="PDF", col=4, ylim=c(0,1))
+plot(x, poiscdf, type='b', xlab="# errors in a page", ylab="Cumulative Probability",
+     main="CDF", col=2, ylim=c(0,1))
+```
+
+Calculate the probability that there is at least one error on a specific page of the book.
+```{r typos2}
+Prob.1err <- 1-ppois(0,rate)   
+```
+The probability of finding one or more errors in a given page is `r Prob.1err`.
+
+## Exercise 4 - Ace from a deck
+We randomly draw cards from a deck of 52 cards, with replacement, until one ace is drawn. Calculate the probability that at least 10 draws are needed.
+
+We need to exclude all the cases where we have less than 9 failures:
+```{r ace}
+p <- 4/52
+minfails <- 8
+Prob  <- 1 - pgeom(minfails, p)
+```
+The probability is: `r Prob`
+
+\newpage
+## Exercise 5 - Italian mayors database
+Importing the dataframe containing all the italian mayors currently in charge:
+```{r importdata}
+dfmayors <- read.csv2("sindaciincarica.csv", skip=2)
+names(dfmayors)
+```
+
+### A) Plot the gender distribution among the mayors.
+```{r genddist, fig.height=7, fig.width=10, out.width='95%'}
+genddist <- table(dfmayors$sesso)
+
+bp<-barplot(genddist, beside=TRUE, col=c("mistyrose", "lightblue"),
+            xlab="Gender", ylab="Counts", legend=c("F","M"), ylim=c(0,max(genddist)+1000),
+            args.legend=list(x="topleft", inset=c(0.05,0)))
+text(bp, genddist+200, labels=genddist, xpd=TRUE)
+title( main="Italian mayors gender distribution" )
+```
+
+### B) Plot the number of towns grouped per province (codice provincia) and per region (codice regione).
+```{r groupedtowns, fig.height=7, fig.width=10, out.width='95%'}
+dfmayors <- tibble(dfmayors)
+
+gdf <- group_split(dfmayors %>% group_by(dfmayors$codice_regione))
+towntable <- vector("list", length(gdf))
+for (i in 1:length(gdf)) {
+    towntable[[i]] <- as.numeric(table(gdf[[i]]$codice_provincia,gdf[[i]]$codice_regione))
+}
+towntable <- as.data.frame(data.table::transpose(towntable), row.names=1:length(gdf))
+color.ramp <- colorRampPalette(c("#0535F0", "#FFFFFF", "#FF0606"))(n=12)
+
+barplot(t(as.matrix(towntable)), ylab="Region code", xlab="# Towns", 
+        main="Italian towns grouped by region and province",
+        border=F, las=1, horiz=T, xlim=c(0, 1600), col=color.ramp)
+```
+
+\newpage
+### C) Plot a distributions of the age (years only) of the mayors.
+```{r ages, fig.height=6, fig.width=10, out.width='95%'}
+cyear <- as.numeric(format(Sys.Date(), "%Y"))
+ages <- cyear - as.numeric(format(as.Date(dfmayors$data_nascita, format="%d/%m/%Y"),"%Y"))
+
+hist(ages, col="green", xlim=c(0,100), density=40)
+```
+
+### D) Plot a distribution of the time the mayor is in charge. Since elections happen every 5 years, how many of them are going to complete their mandate this year? And how many in 2021?
+```{r incharge, fig.height=6, fig.width=10, out.width='95%'}
+cyear <- as.numeric(format(Sys.Date(), "%Y"))
+elecyear <- format(as.Date(dfmayors$data_entrata_in_carica, format="%d/%m/%Y"),"%Y")
+timeincharge <- cyear - as.numeric(elecyear)
+
+breaks <- seq(0.5, 6.5, length=7)
+htimeincharge <- hist(timeincharge, breaks=breaks, col="red", density=40,
+           main="Histogram of Time in charge", xlab="Time in charge",
+           ylim=c(0,4000))
+
+outthisyear <- sum(htimeincharge$counts[5])
+outnextyear <- sum(htimeincharge$counts[4])
+total       <- sum(htimeincharge$counts)
+```
+The number of mayors completing their mandate this year are `r outthisyear` over a total number of `r total`. \newline
+The number of mayors completing their mandate next year are `r outnextyear` over `r total`.
